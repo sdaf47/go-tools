@@ -7,38 +7,38 @@ import (
 )
 
 var (
-	ErrTimeoutExpired = errors.New("channel write timeout expired")
-	ErrChanClosed     = errors.New("write to closed chan")
+	ErrTimeoutExpired = errors.New("C write timeout expired")
+	ErrChanClosed     = errors.New("write to Closed chan")
 )
 
 type SafeChan[E any] struct {
-	channel chan E
-	options Options
-	closed  *int32
+	C       chan E
+	Options Options
+	Closed  *int32
 }
 
 type Options struct {
-	retries int
-	timeout time.Duration
+	Retries int
+	Timeout time.Duration
 }
 
 func NewSafeChan[E any](ch chan E, options Options) SafeChan[E] {
 	return SafeChan[E]{
-		channel: ch,
-		options: options,
-		closed:  new(int32),
+		C:       ch,
+		Options: options,
+		Closed:  new(int32),
 	}
 }
 
 func (sc SafeChan[E]) write(d E, options Options) error {
-	t := time.NewTimer(options.timeout)
+	t := time.NewTimer(options.Timeout)
 	defer t.Stop()
 
-	for i := 0; i < options.retries; i++ {
+	for i := 0; i < options.Retries; i++ {
 		select {
 		case <-t.C:
 			continue
-		case sc.channel <- d:
+		case sc.C <- d:
 			return nil
 		}
 	}
@@ -47,19 +47,15 @@ func (sc SafeChan[E]) write(d E, options Options) error {
 }
 
 func (sc SafeChan[E]) Write(d E) error {
-	if atomic.LoadInt32(sc.closed) != 0 {
+	if atomic.LoadInt32(sc.Closed) != 0 {
 		return ErrChanClosed
 	}
-	return sc.write(d, sc.options)
-}
-
-func (sc SafeChan[E]) C() chan E {
-	return sc.channel
+	return sc.write(d, sc.Options)
 }
 
 func (sc SafeChan[E]) Close() {
-	atomic.StoreInt32(sc.closed, 1)
-	close(sc.channel)
+	atomic.StoreInt32(sc.Closed, 1)
+	close(sc.C)
 }
 
 func (sc SafeChan[E]) WriteWithOptions(d E, options Options) error {

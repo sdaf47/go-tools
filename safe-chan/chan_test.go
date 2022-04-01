@@ -14,8 +14,8 @@ func TestSafeChan_Write(t *testing.T) {
 	)
 
 	ch := NewSafeChan(make(chan int, bufferSize), Options{
-		retries: retries,
-		timeout: timeout,
+		Retries: retries,
+		Timeout: timeout,
 	})
 
 	err := ch.Write(1)
@@ -42,8 +42,8 @@ func TestSafeChan_Close(t *testing.T) {
 	)
 
 	ch := NewSafeChan(make(chan int, bufferSize), Options{
-		retries: retries,
-		timeout: timeout,
+		Retries: retries,
+		Timeout: timeout,
 	})
 
 	err := ch.Write(1)

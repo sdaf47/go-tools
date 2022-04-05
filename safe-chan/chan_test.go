@@ -55,6 +55,24 @@ func TestSafeChan_Close(t *testing.T) {
 
 	err = ch.Write(2)
 	if !errors.Is(err, ErrChanClosed) {
+		t.Fatalf("expect: %s, got: %s", ErrChanClosed, err)
+	}
+}
+
+func TestSafeChan_WriteExpired(t *testing.T) {
+	const (
+		retries    = 1
+		timeout    = 100 * time.Millisecond
+		bufferSize = 0
+	)
+
+	ch := NewSafeChan(make(chan int, bufferSize), Options{
+		Retries: retries,
+		Timeout: timeout,
+	})
+
+	err := ch.Write(1)
+	if !errors.Is(err, ErrTimeoutExpired) {
 		t.Fatalf("expect: %s, got: %s", ErrTimeoutExpired, err)
 	}
 }

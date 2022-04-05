@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ErrTimeoutExpired = errors.New("C write timeout expired")
-	ErrChanClosed     = errors.New("write to Closed chan")
+	ErrTimeoutExpired = errors.New("write timeout expired")
+	ErrChanClosed     = errors.New("write to closed chan")
 )
 
 type SafeChan[E any] struct {
@@ -30,16 +30,23 @@ func NewSafeChan[E any](ch chan E, options Options) SafeChan[E] {
 	}
 }
 
-func (sc SafeChan[E]) write(d E, options Options) error {
-	t := time.NewTimer(options.Timeout)
+func (sc SafeChan[E]) writeWithTicker(d E, timeout time.Duration) error {
+	t := time.NewTimer(timeout)
 	defer t.Stop()
 
+	select {
+	case <-t.C:
+	case sc.C <- d:
+		return nil
+	}
+
+	return ErrTimeoutExpired
+}
+
+func (sc SafeChan[E]) write(d E, options Options) error {
 	for i := 0; i < options.Retries; i++ {
-		select {
-		case <-t.C:
+		if err := sc.writeWithTicker(d, options.Timeout); err != nil {
 			continue
-		case sc.C <- d:
-			return nil
 		}
 	}
 

@@ -45,8 +45,8 @@ func (sc SafeChan[E]) writeWithTicker(d E, timeout time.Duration) error {
 
 func (sc SafeChan[E]) write(d E, options Options) error {
 	for i := 0; i < options.Retries; i++ {
-		if err := sc.writeWithTicker(d, options.Timeout); err != nil {
-			continue
+		if err := sc.writeWithTicker(d, options.Timeout); err == nil {
+			return nil
 		}
 	}
 
